@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Constructor validation is intentional: a weak JWT key must prevent startup. -->
+    <Match><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
+    <!-- Spring injects these service objects; the controller never exposes them. -->
+    <Match><Bug pattern="EI_EXPOSE_REP2"/></Match>
+</FindBugsFilter>
