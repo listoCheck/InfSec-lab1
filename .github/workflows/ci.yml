@@ -23,6 +23,8 @@ jobs:
         run: ./gradlew spotbugsMain
       - name: SCA — OWASP Dependency-Check
         run: ./gradlew dependencyCheckAnalyze
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
       - name: Upload SCA report
         if: always()
         uses: actions/upload-artifact@v4

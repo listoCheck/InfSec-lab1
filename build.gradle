@@ -37,6 +37,10 @@ dependencies {
 dependencyCheck {
     failBuildOnCVSS = 7.0
     formats = ['HTML', 'JSON']
+    nvd {
+        // Supplied by GitHub Actions; never store an NVD key in the repository.
+        apiKey = System.getenv('NVD_API_KEY')
+    }
 }
 
 spotbugs {
