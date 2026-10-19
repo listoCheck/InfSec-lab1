@@ -39,7 +39,6 @@ dependencyCheck {
     failOnError = true
     formats = ['HTML', 'JSON']
     outputDirectory = layout.buildDirectory.dir('reports/dependency-check').get().asFile.absolutePath
-    data.directory = file('.gradle/dependency-check-13').absolutePath
     nvd {
         def key = System.getenv('NVD_API_KEY')?.trim()
         if (key) {
