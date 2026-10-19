@@ -46,15 +46,29 @@ curl -X POST http://localhost:8080/api/posts -H "Authorization: Bearer <TOKEN>" 
 
 ## CI/CD и отчёты
 
-Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) запускается на каждом `push` и `pull request`:
+Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) запускается на каждом `push`, `pull request` и вручную через **Actions → Secure API CI → Run workflow**:
 
 1. запускает тесты Gradle;
 2. запускает SAST SpotBugs с плагином Find Security Bugs;
-3. запускает SCA `OWASP Dependency-Check` и публикует HTML/JSON-отчёт как artifact.
+3. запускает SCA `OWASP Dependency-Check 13.0.0` и публикует HTML/JSON-отчёт как artifact.
+
+Проверка завершается ошибкой при CVSS ≥ 7.0 или сбое анализа. Ошибки сканеров не игнорируются. Артефакты `test-and-sast-reports` и `dependency-check-report` содержат результаты тестов, HTML/XML SpotBugs и HTML/JSON Dependency-Check. Отсутствующий отчёт также считается ошибкой.
+
+Локальное выполнение тех же проверок:
+
+```powershell
+.\gradlew.bat test spotbugsMain dependencyCheckAnalyze --no-daemon --console=plain
+```
+
+Отчёты сохраняются в `build/reports/tests/test/`, `build/reports/spotbugs/` и `build/reports/dependency-check/`.
 
 Конфигурация `config/spotbugs/exclude.xml` документирует два проверенных ложных срабатывания SpotBugs: намеренное завершение запуска при слабом JWT-секрете и безопасное DI-внедрение Spring-компонентов.
 
-Для быстрого обновления CVE-базы создайте ключ на [NVD](https://nvd.nist.gov/developers/request-an-api-key) и добавьте его в GitHub: **Settings → Secrets and variables → Actions → New repository secret**, имя `NVD_API_KEY`. Workflow передаёт его сканеру только через переменную окружения. Без ключа первый SCA-запуск может выполняться десятки минут из-за лимитов NVD.
+Без секретов используется [поддерживаемое разработчиками Dependency-Check зеркало NVD](https://dependency-check.github.io/DependencyCheck/data/mirrornvd.html), которое обычно обновляется раз в сутки. Это позволяет выполнять SCA без медленной первоначальной загрузки через NVD API. Локальная CVE-база хранится в `.gradle/dependency-check-13/` и кэшируется между запусками Actions; обновление базы остается включенным. Первый запуск выполняется дольше последующих.
+
+При необходимости прямого доступа к NVD создайте ключ на [NVD](https://nvd.nist.gov/developers/request-an-api-key) и добавьте GitHub secret `NVD_API_KEY`. При его наличии используется NVD API вместо зеркала. Дополнительный анализ Sonatype Guide включается при передаче secret `SONATYPE_GUIDE_TOKEN`; без учетных данных новая версия сканера автоматически пропускает этот дополнительный сервис, сохраняя проверку по NVD. Секреты передаются только через переменные окружения.
+
+Плагин обновлен с 12.1.0: старая версия не могла импортировать новые записи CVE с длинными URL и выполняла неуспешные анонимные запросы к Sonatype OSS Index.
 
 После публикации репозитория добавьте в этот раздел скриншоты успешного workflow и скачанного отчёта Dependency-Check, а также ссылку на последний успешный запуск GitHub Actions.
 

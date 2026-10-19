@@ -3,6 +3,7 @@ name: Secure API CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -10,25 +11,46 @@ permissions:
 jobs:
   test-sast-sca:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Cache NVD database
+        uses: actions/cache@v4
+        with:
+          path: .gradle/dependency-check-13
+          key: nvd-${{ runner.os }}-13-${{ github.run_id }}
+          restore-keys: |
+            nvd-${{ runner.os }}-13-
       - name: Run tests
-        run: ./gradlew test
+        run: ./gradlew test --no-daemon --console=plain
       - name: SAST — SpotBugs security rules
-        run: ./gradlew spotbugsMain
+        run: ./gradlew spotbugsMain --no-daemon --console=plain
       - name: SCA — OWASP Dependency-Check
-        run: ./gradlew dependencyCheckAnalyze
+        run: ./gradlew dependencyCheckAnalyze --no-daemon --console=plain
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-      - name: Upload SCA report
+          SONATYPE_GUIDE_TOKEN: ${{ secrets.SONATYPE_GUIDE_TOKEN }}
+      - name: Upload test and SAST reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-and-sast-reports
+          path: |
+            build/reports/tests/test/
+            build/test-results/test/*.xml
+            build/reports/spotbugs/
+          if-no-files-found: error
+      - name: Upload SCA reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report
-          path: build/reports/dependency-check-report.*
-          if-no-files-found: warn
+          path: build/reports/dependency-check/dependency-check-report.*
+          if-no-files-found: error

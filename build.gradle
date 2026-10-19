@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '4.1.1'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'org.owasp.dependencycheck' version '12.1.0'
+    id 'org.owasp.dependencycheck' version '13.0.0'
     id 'com.github.spotbugs' version '6.4.8'
 }
 
@@ -36,10 +36,24 @@ dependencies {
 
 dependencyCheck {
     failBuildOnCVSS = 7.0
+    failOnError = true
     formats = ['HTML', 'JSON']
+    outputDirectory = layout.buildDirectory.dir('reports/dependency-check').get().asFile.absolutePath
+    data.directory = file('.gradle/dependency-check-13').absolutePath
     nvd {
-        // Supplied by GitHub Actions; never store an NVD key in the repository.
-        apiKey = System.getenv('NVD_API_KEY')
+        def key = System.getenv('NVD_API_KEY')?.trim()
+        if (key) {
+            apiKey = key
+        } else {
+            // Official Dependency-Check mirror of NVD data; no API key required.
+            datafeedUrl = 'https://dependency-check.github.io/DependencyCheck_Builder/nvd_cache/nvdcve-{0}.json.gz'
+        }
+    }
+    analyzers {
+        ossIndex {
+            // New versions handle missing credentials without failed anonymous requests.
+            password = System.getenv('SONATYPE_GUIDE_TOKEN')
+        }
     }
 }
 
@@ -50,4 +64,11 @@ spotbugs {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+tasks.named('spotbugsMain') {
+    reports {
+        html.required = true
+        xml.required = true
+    }
 }
