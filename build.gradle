@@ -43,8 +43,12 @@ dependencyCheck {
     formats = ['HTML', 'JSON']
     outputDirectory = layout.buildDirectory.dir('reports/dependency-check').get().asFile.absolutePath
     nvd {
+        def feed = System.getenv('NVD_DATAFEED_URL')?.trim()
         def key = System.getenv('NVD_API_KEY')?.trim()
-        if (key) {
+        if (feed) {
+            // CI explicitly selects the feed so repository secrets cannot switch it to the slow API path.
+            datafeedUrl = feed
+        } else if (key) {
             apiKey = key
         } else {
             // Official Dependency-Check mirror of NVD data; no API key required.

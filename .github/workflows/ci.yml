@@ -12,6 +12,8 @@ jobs:
   test-sast-sca:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      NVD_DATAFEED_URL: https://dependency-check.github.io/DependencyCheck_Builder/nvd_cache/nvdcve-{0}.json.gz
     steps:
       - uses: actions/checkout@v5
       - name: Set up JDK 17
@@ -21,13 +23,13 @@ jobs:
           java-version: '17'
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Cache NVD database
-        uses: actions/cache@v4
+      - name: Restore NVD database
+        uses: actions/cache/restore@v4
         with:
           path: ~/.gradle/dependency-check-data
-          key: nvd-${{ runner.os }}-13-${{ github.run_id }}
+          key: nvd-feed-${{ runner.os }}-13-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            nvd-${{ runner.os }}-13-
+            nvd-feed-${{ runner.os }}-13-
       - name: Run tests
         run: ./gradlew test --no-daemon --console=plain
       - name: SAST — SpotBugs security rules
@@ -44,10 +46,19 @@ jobs:
               raise SystemExit('SpotBugs analysis is incomplete; inspect main.xml')
           print(f"SpotBugs analyzed {summary.get('total_classes')} classes; bugs: {summary.get('total_bugs')}")
           PY
+      - name: Update NVD database from feed
+        id: nvd-update
+        timeout-minutes: 25
+        run: ./gradlew dependencyCheckUpdate --no-daemon --console=plain --info
+      - name: Save updated NVD database
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.gradle/dependency-check-data
+          key: nvd-feed-${{ runner.os }}-13-${{ github.run_id }}-${{ github.run_attempt }}
       - name: SCA — OWASP Dependency-Check
+        timeout-minutes: 10
         run: ./gradlew dependencyCheckAnalyze --no-daemon --console=plain
         env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
           SONATYPE_GUIDE_TOKEN: ${{ secrets.SONATYPE_GUIDE_TOKEN }}
       - name: Upload test and SAST reports
         if: always()
