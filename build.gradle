@@ -67,7 +67,8 @@ tasks.named('test') {
 
 tasks.named('spotbugsMain') {
     reports {
-        html.required = true
+        // Multiple simultaneous reporters produce empty summary statistics in SpotBugs 4.9.8.
+        html.required = false
         xml.required = true
     }
 }

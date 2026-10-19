@@ -31,7 +31,19 @@ jobs:
       - name: Run tests
         run: ./gradlew test --no-daemon --console=plain
       - name: SAST — SpotBugs security rules
-        run: ./gradlew spotbugsMain --no-daemon --console=plain
+        run: |
+          ./gradlew spotbugsMain --no-daemon --console=plain
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build/reports/spotbugs/main.xml').getroot()
+          summary = root.find('FindBugsSummary')
+          if summary is None or int(summary.get('total_classes', '0')) == 0:
+              raise SystemExit('SpotBugs did not analyze any application classes')
+          errors = root.find('Errors')
+          if errors is not None and any(int(errors.get(key, '0')) for key in ('errors', 'missingClasses')):
+              raise SystemExit('SpotBugs analysis is incomplete; inspect main.xml')
+          print(f"SpotBugs analyzed {summary.get('total_classes')} classes; bugs: {summary.get('total_bugs')}")
+          PY
       - name: SCA — OWASP Dependency-Check
         run: ./gradlew dependencyCheckAnalyze --no-daemon --console=plain
         env:

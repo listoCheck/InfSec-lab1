@@ -52,7 +52,7 @@ Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) запускае
 2. запускает SAST SpotBugs с плагином Find Security Bugs;
 3. запускает SCA `OWASP Dependency-Check 13.0.0` и публикует HTML/JSON-отчёт как artifact.
 
-Проверка завершается ошибкой при CVSS ≥ 7.0 или сбое анализа. Ошибки сканеров не игнорируются. Артефакты `test-and-sast-reports` и `dependency-check-report` содержат результаты тестов, HTML/XML SpotBugs и HTML/JSON Dependency-Check. Отсутствующий отчёт также считается ошибкой.
+Проверка завершается ошибкой при CVSS ≥ 7.0 или сбое анализа. Ошибки сканеров не игнорируются. Артефакты `test-and-sast-reports` и `dependency-check-report` содержат результаты тестов, XML SpotBugs и HTML/JSON Dependency-Check. Отсутствующий отчёт также считается ошибкой. После SAST дополнительно проверяется, что проанализированы классы приложения и нет ошибок либо недостающих классов. Используется один XML reporter: одновременная генерация HTML и XML в SpotBugs 4.9.8 приводит к пустой статистике анализа.
 
 Локальное выполнение тех же проверок:
 
