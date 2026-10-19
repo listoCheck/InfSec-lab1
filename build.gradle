@@ -10,6 +10,9 @@ group = 'src'
 version = '0.0.1-SNAPSHOT'
 description = 'InfSec-lab1'
 
+// Keep all embedded Tomcat modules aligned with the patched 11.0.x release.
+ext['tomcat.version'] = '11.0.27'
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
